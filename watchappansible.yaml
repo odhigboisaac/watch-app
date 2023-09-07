@@ -1,0 +1,11 @@
+- hosts: all
+  become: true
+  tasks:
+    #  - name: delete old deployment
+    #    command: kubectl delete deployment watchapp-deployment
+    #  - name: delete old service
+    #    command: kubectl delete service watchapp-service
+     - name: create new deployment
+       command: kubectl apply -f /home/azureuser/watchappdeployment.yaml
+     - name: create new service
+       command: kubectl apply -f /home/azureuser/watchappservice.yaml

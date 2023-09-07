@@ -1,0 +1,63 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('git pull from repository') {
+            steps {
+                git branch: 'main', url: 'https://github.com/odhigboisaac/watch-app.git'
+            }
+        }
+        
+        stage ('copy file to ansible') {
+            steps {
+                sshagent(['jenans']) {
+                  sh 'ssh -o StrictHostKeyChecking=no azureuser@172.172.75.25 cd /home/azureuser/'
+                  sh 'scp /var/lib/jenkins/workspace/watch-app/* azureuser@172.172.75.25:/home/azureuser/'
+               }
+            }
+        } 
+        stage ('build image and tagging') {
+            steps {
+                sshagent(['jenans']) {
+                    sh 'ssh -o StrictHostKeyChecking=no azureuser@172.172.75.25 cd /home/azureuser'
+                    sh 'ssh -o StrictHostKeyChecking=no azureuser@172.172.75.25 sudo docker image build -t monitor .'
+                    sh 'ssh -o StrictHostKeyChecking=no azureuser@172.172.75.25  docker image tag monitor tekshare/watch-app:beta'
+               }
+            }
+        }
+        
+        stage ('pushing to dockerhub ') {
+            steps {
+                sshagent(['jenans']) {
+                    withCredentials([string(credentialsId: 'login', variable: 'login')]) {
+                        sh 'ssh -o StrictHostKeyChecking=no azureuser@172.172.75.25 cd /home/azureuser/'
+                        sh "echo ${login} | docker login -u tekshare --password-stdin"
+                        sh "ssh -o StrictHostKeyChecking=no azureuser@172.172.75.25 sudo docker push tekshare/watch-app:beta"
+                      
+                        //sh "ssh -o StrictHostKeyChecking=no azureuser@172.172.75.25 sudo docker image rm tekshare/k8proj:beta"
+                   }
+                }
+                  
+            }
+        }
+        
+        stage ('also copy files to kubernetes server') {
+            steps {
+                sshagent(['jenkins-k8']) {
+                    sh 'ssh -o StrictHostKeyChecking=no azureuser@20.65.53.21 cd /home/azureuser/'
+                    sh 'scp /var/lib/jenkins/workspace/watch-app/* azureuser@20.65.53.21:/home/azureuser/'
+                    
+               }
+            }
+        }
+        
+        stage ('run the ansible playbook') {
+            steps {
+                sshagent(['jenans']) {
+                  sh 'ssh -o StrictHostKeyChecking=no azureuser@172.172.75.25 cd /home/azureuser/'
+                  sh 'ssh -o StrictHostKeyChecking=no azureuser@172.172.75.25 ansible-playbook watchappansible.yaml'
+               }
+            }
+        } 
+    }
+}

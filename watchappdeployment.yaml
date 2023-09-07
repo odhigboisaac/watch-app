@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: watchapp-deployment
+  labels:
+    app: watchapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: watchapp
+  template:
+    metadata:
+      labels:
+        app: watchapp
+    spec:
+      containers:
+      - name: watchappcontainer
+        image: tekshare/watch-app:v1
+        ports:
+        - containerPort: 80
