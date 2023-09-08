@@ -18,4 +18,4 @@ spec:
       - name: watchappcontainer
         image: tekshare/watch-app:v1
         ports:
-        - containerPort: 5000
+        - containerPort: 80
